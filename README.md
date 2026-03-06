@@ -3,9 +3,39 @@
 > [!WARNING]
 > **This project is experimental.** The generated Terraform configurations are a starting point, not a production-ready solution. Real-world deployments will require manual review, iterative adjustments through additional Copilot prompts, and thorough testing before applying to a live Dynatrace account. Always validate with `terraform plan` and verify effective permissions in a non-production environment first.
 
+> [!IMPORTANT]
+> **LLM Model Matters.** This project was developed and tested with **Claude Opus 4.6** via GitHub Copilot. The quality of generated IAM configurations depends heavily on the model used — different models may misunderstand IAM scoping rules, generate invalid permission identifiers, or fail to follow the design constraints in `instructions.md`. If you switch models, verify outputs carefully.
+
 Generate Terraform-managed IAM configurations for Dynatrace Grail (3rd Gen) environments using GitHub Copilot.
 
 This project uses an [`instructions.md`](instructions.md) specification file to define the IAM model. You fill in your Business Units, applications, and stages — GitHub Copilot reads the spec and generates a complete, ready-to-apply Terraform configuration.
+
+---
+
+## Getting Started with VS Code
+
+1. **Open the repository** in Visual Studio Code:
+   ```bash
+   code "/path/to/GenAI IAM Generation"
+   ```
+   Or use **File → Open Folder** and select the repository root.
+
+2. **Install GitHub Copilot** — ensure the [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) and [GitHub Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat) extensions are installed.
+
+3. **Select Claude Opus 4.6** as the Copilot model — click the model selector in Copilot Chat and choose `Claude Opus 4.6`. This is the tested and recommended model.
+
+4. **Copilot instructions are automatic** — the file [`.github/copilot-instructions.md`](.github/copilot-instructions.md) is automatically loaded by GitHub Copilot when you open this workspace. It contains:
+   - Critical IAM gotchas (Admin User scoping, permission validation, boundary rules)
+   - Generation rules (read `instructions.md` → extract input → write to `outputs/`)
+   - Mandatory documentation update rules
+   - Links to Dynatrace IAM reference documentation
+
+   You do not need to paste these instructions manually — Copilot reads them on every interaction.
+
+5. **Key reference files** to review before generating:
+   - [`instructions.md`](instructions.md) — IAM specification with a clearly marked **Customer Input** section
+   - [`LESSONS_LEARNED.md`](LESSONS_LEARNED.md) — Accumulated gotchas and design decisions
+   - [`sample-outputs/`](sample-outputs/) — Complete working example to use as a reference
 
 ---
 
@@ -216,6 +246,8 @@ Type `yes` when prompted to create the resources in your Dynatrace account.
 ## References
 
 - [Dynatrace IAM Documentation](https://docs.dynatrace.com/docs/manage/identity-access-management)
+- [Default Policies](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/default-policies) — check what's already included before creating custom policies
+- [IAM Policy Reference](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/iam-policy-reference) — valid permissions and conditions
 - [Policy Statement Syntax](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/manage-user-permissions-policies/iam-policystatement-syntax)
 - [Policy Boundaries](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/manage-user-permissions-policies/iam-policy-boundaries)
 - [Dynatrace Terraform Provider](https://registry.terraform.io/providers/dynatrace-oss/dynatrace/latest/docs)

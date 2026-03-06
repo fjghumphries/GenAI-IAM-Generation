@@ -126,6 +126,8 @@ Create one templated policy (e.g., "Scoped Data Read") and bind it to multiple g
 ### Key Insight
 Dynatrace maintains default policies that stay up-to-date with platform changes. **Always check what's included in Standard User and Admin User before creating custom policies** - you'll likely find the permission is already there.
 
+Refer to the [Default Policies documentation](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/default-policies) and the [IAM Policy Reference](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/iam-policy-reference) (also linked in `.github/copilot-instructions.md`).
+
 ### Standard User Includes (as of March 2026)
 ```
 // Documents - FULL CRUD
