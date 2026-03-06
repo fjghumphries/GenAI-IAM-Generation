@@ -8,6 +8,8 @@
 *.env
 outputs/.env
 outputs/**/.env
+sample-outputs/**/.env
+sample-outputs/.env
 
 # Generated Terraform configurations (user-specific)
 outputs/
