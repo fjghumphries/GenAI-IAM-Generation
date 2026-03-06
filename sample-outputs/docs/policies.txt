@@ -8,7 +8,7 @@ Policies define WHAT actions users can perform.
 NOTE: IAM is additive. Permissions compound across policies. You cannot
 restrict what a broader policy already grants.
 
-Total policies: 7 (4 default + 3 templated + 1 custom)
+Total policies: 8 (3 default + 3 templated + 2 custom)
 
 ================================================================================
 SECTION 1: DYNATRACE DEFAULT POLICIES (Out-of-the-Box)
@@ -25,8 +25,8 @@ for scoped data access.
 --------------------------------------------------------------------------------
 1.1 Standard User
 --------------------------------------------------------------------------------
-Purpose:    Base policy for all non-admin users
-Used by:    BU Users, Application Admins, Application Users
+Purpose:    Base policy for all users (including BU Admins)
+Used by:    All groups
 
 Key grants:
   Documents:   Full CRUD (read, write, delete, share)
@@ -43,22 +43,23 @@ Key grants:
 NOT included: storage:logs/metrics/spans/events/bizevents:read
 
 --------------------------------------------------------------------------------
-1.2 Admin User
+1.2 Admin User  *** NOT USED — SEE NOTE ***
 --------------------------------------------------------------------------------
-Purpose:    Full administrative access for BU-level admins
-Used by:    BU Admins
+Purpose:    Full administrative access (Dynatrace default)
+Used by:    NOT USED in this configuration
 
-Includes everything in Standard User PLUS:
-  Automation:  Full admin (write all types, admin, full calendars/rules)
-  Settings:    Full write + admin (UNCONDITIONAL)
-  SLOs:        Write (create/manage)
-  Extensions:  Full write
-  OpenPipeline: Write
-  App Engine:  Install + delete apps
-  Deployment:  ActiveGate/OneAgent configuration
-  OAuth2:      Client management
+Why excluded:
+  The Admin User default policy grants unconditional settings:objects:write
+  which CANNOT be scoped via boundaries. Since IAM is additive, binding
+  Admin User alongside a bounded Scoped Settings Write policy results
+  in the broader unbounded permission winning.
 
-NOT included: storage:logs/metrics/spans/events/bizevents:read
+  Instead, we use the custom "Admin Features" policy (see Section 3.1)
+  which provides the same admin capabilities WITHOUT settings write.
+  Settings write is only granted via the bounded Scoped Settings Write
+  templated policy.
+
+  See LESSONS_LEARNED.md #16 for full details.
 
 --------------------------------------------------------------------------------
 1.3 Read Entities
@@ -88,7 +89,7 @@ The parameter value is provided when binding the policy to a group.
 2.1 Scoped Grail Data Read
 --------------------------------------------------------------------------------
 Name:       Scoped Grail Data Read
-Parameter:  security_context_prefix (e.g., "BU1-" or "BU1-PROD-APPLICATION_A")
+Parameter:  security_context_prefix (e.g., "BU1-" or "BU1-PROD-PETCLINIC01")
 
 Policy Statement:
     ALLOW storage:logs:read 
@@ -152,12 +153,43 @@ Used by:    Admin groups (can modify settings within their scope)
 SECTION 3: CUSTOM POLICIES
 ================================================================================
 
-Only one custom policy remains. All other common capabilities
-(documents, Davis AI, automation read, SLO read, segments) are
-already covered by Standard User and Admin User default policies.
+Custom policies provide specialized access that default policies don't cover,
+or replace default policies that grant overly broad permissions.
 
 --------------------------------------------------------------------------------
-3.1 SLO Manager
+3.1 Admin Features (No Settings Write)
+--------------------------------------------------------------------------------
+Purpose:    Admin-level feature access WITHOUT settings:objects:write
+Why needed: Replaces Admin User default policy to ensure settings write
+            is ONLY granted via the bounded Scoped Settings Write policy.
+            Admin User cannot be used because it grants unconditional
+            settings:objects:write that bypasses boundaries.
+
+Policy Statement:
+    // Full automation admin
+    ALLOW automation:workflows:read, automation:workflows:write,
+          automation:workflows:run, automation:workflows:admin;
+    ALLOW automation:calendars:read, automation:calendars:write;
+    ALLOW automation:rules:read, automation:rules:write;
+
+    // SLO management
+    ALLOW slo:slos:read, slo:slos:write;
+    ALLOW slo:objective-templates:read;
+
+    // Extensions management
+    ALLOW extensions:definitions:read, extensions:definitions:write;
+    ALLOW extensions:configurations:read, extensions:configurations:write;
+
+    // OpenPipeline configuration
+    ALLOW openpipeline:configurations:read, openpipeline:configurations:write;
+
+    // App Engine management
+    ALLOW app-engine:apps:install, app-engine:apps:delete, app-engine:apps:run;
+
+Used by:    BU Admins only
+
+--------------------------------------------------------------------------------
+3.2 SLO Manager
 --------------------------------------------------------------------------------
 Purpose:    Adds SLO write capability on top of Standard User
 Why needed: Standard User has SLO read only. Admin User has SLO write,
@@ -168,7 +200,7 @@ Policy Statement:
     ALLOW slo:objective-templates:read;
 
 Used by:    Application Admins only
-            (BU Admins get this via Admin User default policy)
+            (BU Admins get SLO write via Admin Features custom policy)
 
 
 ================================================================================
@@ -178,14 +210,15 @@ POLICY SUMMARY TABLE
 +------------------------------+------------+----------------------------------+
 | Policy                       | Type       | Used By                          |
 +------------------------------+------------+----------------------------------+
-| Admin User                   | Default    | BU Admins                        |
-| Standard User                | Default    | BU Users, LA Admins, LA Users    |
+| Standard User                | Default    | All groups                       |
+| Admin User                   | Default    | NOT USED (see note above)        |
 | Read Entities                | Default    | All groups (with boundary)       |
-| Read System Events           | Default    | BU Admins, LA Admins             |
+| Read System Events           | Default    | BU Admins, App Admins            |
 | Scoped Grail Data Read       | Templated  | All groups (with boundary+param) |
-| Scoped Settings Read         | Templated  | BU Users, LA Users (with bdry)   |
-| Scoped Settings Write        | Templated  | BU Admins, LA Admins (with bdry) |
-| SLO Manager                  | Custom     | Application Admins only            |
+| Scoped Settings Read         | Templated  | BU Users, App Users (with bdry)  |
+| Scoped Settings Write        | Templated  | BU Admins, App Admins (with bdry)|
+| Admin Features               | Custom     | BU Admins only                   |
+| SLO Manager                  | Custom     | Application Admins only          |
 +------------------------------+------------+----------------------------------+
 
 

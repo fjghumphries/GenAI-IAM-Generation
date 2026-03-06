@@ -25,27 +25,28 @@ Account Level
 │   └── {BU}-Users           → Read access to all BU data
 │
 └── Application-Level Groups
-    ├── {Application}-Admins   → Read data + write settings for application
-    └── {Application}-Users    → Read-only access to application data
+    ├── {Application}-Admins → Read data + write settings for application
+    └── {Application}-Users  → Read-only access to application data
 ```
 
 ## Files Structure
 
 ```
-iam/
-├── versions.tf                      # Terraform and provider versions
-├── provider.tf                      # Dynatrace provider configuration
-├── variables.tf                     # Input variables
-├── terraform.tfvars.example         # Example variable values
-├── outputs.tf                       # Output definitions
-├── main.tf                          # Main configuration notes
-├── boundaries_main.tf               # Policy boundary definitions
-├── policies_default_policies.tf     # References to Dynatrace default policies
-├── policies_templated_policies.tf   # Parameterized custom policies
-├── policies_custom_policies.tf      # Additional custom policies
-├── groups_main.tf                   # Group definitions
-├── bindings_bu_bindings.tf          # BU-level policy bindings
-└── bindings_application_bindings.tf   # Application-level policy bindings
+sample-outputs/
+├── versions.tf                        # Terraform and provider versions
+├── provider.tf                        # Dynatrace provider configuration
+├── variables.tf                       # Input variables
+├── terraform.tfvars.example           # Example variable values
+├── outputs.tf                         # Output definitions
+├── main.tf                            # Main configuration notes
+├── boundaries_main.tf                 # Policy boundary definitions
+├── policies_default_policies.tf       # References to Dynatrace default policies
+├── policies_templated_policies.tf     # Parameterized custom policies
+├── policies_custom_policies.tf        # Additional custom policies
+├── groups_main.tf                     # Group definitions
+├── bindings_bu_bindings.tf            # BU-level policy bindings
+├── bindings_application_bindings.tf   # Application-level policy bindings
+└── sample-instructions.md             # Customer input instructions
 ```
 
 ## Prerequisites
@@ -69,7 +70,7 @@ iam/
 ### 1. Initialize Terraform
 
 ```bash
-cd iam
+cd sample-outputs
 terraform init
 ```
 
@@ -99,7 +100,7 @@ terraform apply
 Boundaries decouple permissions (the "What") from scope (the "Where"). They contain conditions that restrict access based on security_context:
 
 - **BU Boundaries**: `storage:dt.security_context startsWith "BU1-";`
-- **Application Boundaries**: Include all stages within a application
+- **Application Boundaries**: Include all stages within an application
 
 ### Templated Policies
 
@@ -115,18 +116,17 @@ Bound with different parameter values for different groups.
 ### Default Policies
 
 This configuration uses Dynatrace default policies to minimize custom policy overhead:
-- `Admin User` - For BU Admins (full automation, SLO write, settings write)
-- `Standard User` - For all other users (documents, Davis AI, automation read, SLO read)
+- `Standard User` - For all users (documents, Davis AI, automation read, SLO read)
 - `Read Entities` - Entity access with boundaries
 - `Read System Events` - System event access
 
-**Note**: Default policies don't include Grail data read (logs, metrics, spans, events). We use templated policies for scoped data access.
+**Note**: The `Admin User` default policy is intentionally **not used** because it grants unconditional `settings:objects:write` that cannot be scoped via boundaries. Instead, we use a custom `Admin Features` policy that provides admin capabilities without settings write.
 
 ## Group Permissions Summary
 
 | Group | Base Policy | Data Access | Settings | Automation | SLOs |
 |-------|-------------|-------------|----------|------------|------|
-| BU-Admins | Admin User | All BU data | Write (scoped) | Full Admin | Manager |
+| BU-Admins | Std User + Admin Features | All BU data | Write (scoped) | Full Admin | Manager |
 | BU-Users | Standard User | All BU data | Read (global) | Limited | Reader |
 | Application-Admins | Standard User | Application data | Write (scoped) | Limited | Manager |
 | Application-Users | Standard User | Application data | Read (global) | Limited | Reader |
@@ -140,9 +140,9 @@ Add to `variables.tf` or `terraform.tfvars`:
 ```hcl
 business_units = {
   "BU3" = {
-    name        = "BU3"
-    description = "New Business Unit"
-    applications  = ["APPLICATION_E", "APPLICATION_F"]
+    name         = "BU3"
+    description  = "New Business Unit"
+    applications = ["APP_E", "APP_F"]
   }
 }
 ```
@@ -160,7 +160,7 @@ applications = {
 }
 ```
 
-> **Note**: Application map keys must be unique. If a application name is shared across BUs,
+> **Note**: Application map keys must be unique. If an application name is shared across BUs,
 > prefix the key with the BU (e.g. `BU1_APPNAME`). The `name` field drives the security context.
 
 ## Troubleshooting
@@ -181,4 +181,6 @@ Verify:
 - [Dynatrace IAM Documentation](https://docs.dynatrace.com/docs/manage/identity-access-management)
 - [Policy Statement Syntax](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/manage-user-permissions-policies/iam-policystatement-syntax)
 - [Policy Boundaries](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/manage-user-permissions-policies/iam-policy-boundaries)
+- [IAM Policy Reference](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/iam-policy-reference)
+- [Default Policies](https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/default-policies)
 - [Terraform Provider](https://registry.terraform.io/providers/dynatrace-oss/dynatrace/latest/docs)

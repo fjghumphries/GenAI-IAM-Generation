@@ -6,7 +6,7 @@
 # for hierarchical scoping as per the governance rules.
 #
 # Security Context Format: BU-STAGE-APPLICATION-COMPONENT
-# Example: BU1-PROD-APPLICATION_A-API
+# Example: BU1-PROD-PETCLINIC01-API
 #
 # IMPORTANT:
 # - Boundaries don't support AND operator - each line is a separate condition

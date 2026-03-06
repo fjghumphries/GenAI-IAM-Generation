@@ -19,9 +19,10 @@ data "dynatrace_iam_policy" "standard_user" {
   name = "Standard User"
 }
 
-data "dynatrace_iam_policy" "admin_user" {
-  name = "Admin User"
-}
+# NOTE: Admin User default policy is intentionally NOT used.
+# It grants unconditional settings:objects:write which cannot be scoped.
+# Instead, we use the custom Admin Features policy + bounded Scoped Settings Write.
+# See LESSONS_LEARNED.md #16 for details.
 
 data "dynatrace_iam_policy" "pro_user" {
   name = "Pro User"

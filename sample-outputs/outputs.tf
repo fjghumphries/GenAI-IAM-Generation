@@ -94,7 +94,7 @@ output "iam_summary" {
   description = "Summary of created IAM resources"
   value = {
     business_units     = keys(var.business_units)
-    applications         = keys(var.applications)
+    applications       = keys(var.applications)
     groups_created     = length(dynatrace_iam_group.bu_admins) + length(dynatrace_iam_group.bu_users) + length(dynatrace_iam_group.application_admins) + length(dynatrace_iam_group.application_users)
     boundaries_created = length(dynatrace_iam_policy_boundary.bu_boundary) + length(dynatrace_iam_policy_boundary.application_boundary) + length(dynatrace_iam_policy_boundary.application_settings_boundary) + length(dynatrace_iam_policy_boundary.bu_settings_boundary)
   }

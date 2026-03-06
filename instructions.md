@@ -10,16 +10,7 @@ Goals:
 
 ---
 
-## 2. Customer Environment
-
-- **10 Business Units (BUs)**
-- **~2,000 applications** (also called deployments or landscapes)
-- Previously used 1 Management Zone per deployment (2nd Gen) — migrating to Grail IAM
-- Telemetry from: OneAgent, OpenTelemetry, Extensions, APIs
-
----
-
-## 3. Group Model
+## 2. Group Model
 
 Two levels of groups are created. Both levels have two roles. This is fixed — customers do not change the group structure, only the BU and application names they apply to.
 
@@ -34,10 +25,16 @@ Two levels of groups are created. Both levels have two roles. This is fixed — 
 
 | Role | Base policy | Data access | Settings | SLO write |
 |---|---|---|---|---|
-| **Admins** (BU level) | Admin User | Scoped to BU | Write, scoped to BU | Yes (via Admin User) |
+| **Admins** (BU level) | Standard User + Admin Features (custom) | Scoped to BU | Write, scoped to BU | Yes (via Admin Features) |
 | **Users** (BU level) | Standard User | Scoped to BU | Read only (global) | No |
 | **Admins** (Application level) | Standard User + SLO Manager | Scoped to application | Write, scoped to application | Yes (via SLO Manager) |
 | **Users** (Application level) | Standard User | Scoped to application | Read only (global) | No |
+
+IMPORTANT! The Admin User default policy is intentionally NOT used for BU Admins because it grants unconditional `settings:objects:write` which cannot be scoped via boundaries. Instead, use a custom "Admin Features" policy that cherry-picks admin capabilities (automation admin, SLO write, extensions, OpenPipeline, App Engine, etc.) WITHOUT settings write. Settings write is granted separately via the bounded Scoped Settings Write templated policy.
+
+IMPORTANT! When deciding how to create policies, make sure you understand what is already included in the default policies. This is published here: https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/default-policies
+
+IMPORTANT! Always check Dynatrace documentation IAM Reference to understand valid permissions and conditions before creating policies: https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/iam-policy-reference
 
 ### Customer Input Required
 
@@ -73,9 +70,9 @@ Application-to-BU mapping:
 
 ---
 
-## 4. Core IAM Principles
+## 3. Core IAM Principles
 
-### 4.1 Primary Grail Fields
+### 3.1 Primary Grail Fields
 
 These fields exist across all signals and are usable in IAM policy conditions:
 
@@ -83,7 +80,7 @@ These fields exist across all signals and are usable in IAM policy conditions:
 - `dt.cost.costcenter`
 - `dt.cost.product`
 
-### 4.2 Primary Grail Tags (Customer-defined)
+### 3.2 Primary Grail Tags (Customer-defined)
 
 Tags use the `primary_tags.<name>` prefix. Planned tags:
 - `primary_tags.bu`
@@ -95,7 +92,7 @@ Tags use the `primary_tags.<name>` prefix. Planned tags:
 
 ---
 
-## 5. Security Context Strategy
+## 4. Security Context Strategy
 
 ### Format
 
@@ -135,14 +132,3 @@ This sets:
 
 > **Note**: `dt.security_context` is set explicitly here rather than derived. This is the most reliable approach — derivation from tags requires OpenPipeline and introduces a dependency on the enrichment pipeline being in place.
 
----
-
-## 6. Segments (Replaces Management Zones)
-
-Segments are used for **filtering and visibility**, not security enforcement.
-
-- Based on primary grail fields and primary grail tags
-- Can combine conditions: `(segment1 OR segment2) AND stage == "PROD"`
-- Segments are read-only to end users; managed centrally
-
-> **Critical**: IAM must NOT rely on segments for security enforcement. Security is enforced exclusively via `dt.security_context` in policy boundaries.

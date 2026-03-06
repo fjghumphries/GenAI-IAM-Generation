@@ -71,16 +71,25 @@ Query:
 SECTION 2: BU ADMIN BINDINGS
 ================================================================================
 
-BU Admins use Admin User default policy which already includes SLO write,
-full automation, settings write, etc. We only add scoped data + settings.
+BU Admins use Standard User + Admin Features (custom policy) instead of
+Admin User. This ensures settings:objects:write is ONLY granted via the
+bounded Scoped Settings Write policy.
+
+Admin User default policy is intentionally NOT used because it grants
+unconditional settings:objects:write that cannot be scoped.
 
 --------------------------------------------------------------------------------
-2.1 BU1-Admins - Binding Resource 1 (data)
+2.1 BU1-Admins - Binding Resource 1 (data + features)
 --------------------------------------------------------------------------------
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Policy: Admin User (default)                                                │
+│ Policy: Standard User (default)                                             │
 │ Boundary: None                                                              │
-│ Result: Full admin features (automation admin, SLO write, extensions, etc.) │
+│ Result: Documents, Davis AI, segments, SLO read, automation read, etc.      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Policy: Admin Features (custom)                                             │
+│ Boundary: None                                                              │
+│ Result: Full automation admin, SLO write, extensions write, OpenPipeline,   │
+│         App Engine — NO settings:objects:write                               │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ Policy: Scoped Grail Data Read (templated)                                  │
 │ Boundary: Boundary-BU1                                                      │
@@ -104,7 +113,7 @@ full automation, settings write, etc. We only add scoped data + settings.
 │ Boundary: Boundary-BU1-Settings                                             │
 │ Parameters: security_context_prefix = "BU1-"                                │
 │ Result: Read/write settings scoped to BU1 entities                          │
-│ Note: Boundary enforces scope on top of Admin User's global write           │
+│ Note: This is the ONLY source of settings:objects:write for BU Admins       │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 BU2-Admins: Same structure with Boundary-BU2 and Boundary-BU2-Settings.
@@ -230,9 +239,9 @@ SECTION 6: BINDING SUMMARY MATRIX
 │ Group                 │ Base Policy│ Grail Data    │ Settings     │ SLOs    │
 │                       │            │ (+ boundary)  │ Write        │         │
 ├───────────────────────┼────────────┼───────────────┼──────────────┼─────────┤
-│ BU1-Admins            │ Admin User │ ✓ BU1 scope         │ ✓ BU1 scope  │ ✓ Write │
+│ BU1-Admins            │ Std+AdmFt  │ ✓ BU1 scope         │ ✓ BU1 scope  │ ✓ Write │
 │ BU1-Users             │ Std User   │ ✓ BU1 scope         │ Read only    │ Read    │
-│ BU2-Admins            │ Admin User │ ✓ BU2 scope         │ ✓ BU2 scope  │ ✓ Write │
+│ BU2-Admins            │ Std+AdmFt  │ ✓ BU2 scope         │ ✓ BU2 scope  │ ✓ Write │
 │ BU2-Users             │ Std User   │ ✓ BU2 scope         │ Read only    │ Read    │
 ├───────────────────────┼────────────┼─────────────────────┼──────────────┼─────────┤
 │ PETCLINIC01-Admins    │ Std User   │ ✓ BU1-*-PETCLINIC01 │ ✓ PC01 scope │ ✓ Write │
@@ -241,9 +250,11 @@ SECTION 6: BINDING SUMMARY MATRIX
 │ PETCLINIC02-Users     │ Std User   │ ✓ BU2-*-PETCLINIC02 │ Read only    │ Read    │
 └───────────────────────┴────────────┴───────────────┴──────────────┴─────────┘
 
+Std+AdmFt = Standard User + Admin Features (custom policy)
+
 Binding resource count per group type:
-  BU Admin:        2 resources (data binding + settings binding)
-  BU User:         1 resource  (data + settings read in one binding)
+  BU Admin:          2 resources (data binding + settings binding)
+  BU User:           1 resource  (data + settings read in one binding)
   Application Admin: 2 resources (data binding + settings/SLO binding)
   Application User:  1 resource  (data + settings read in one binding)
 

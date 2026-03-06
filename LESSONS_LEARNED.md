@@ -190,9 +190,9 @@ You MUST create custom/templated policies for Grail data access.
 
 ### Best Practice
 1. Query default policy contents via API or Terraform output before creating custom policies
-2. Use `Admin User` for admin groups - eliminates need for custom automation/SLO policies
-3. Use `Standard User` for regular users - already includes documents, Davis AI, etc.
-4. Only create custom policies for Grail data read and scoped settings write
+2. **Do NOT use `Admin User` directly** for admin groups — it grants unconditional `settings:objects:write` that cannot be scoped. Instead, create a custom `Admin Features` policy that cherry-picks the admin capabilities you need (see Lesson #16)
+3. Use `Standard User` for all users (including admins) — it provides the base feature set
+4. Only create custom policies for Grail data read, scoped settings write, and admin features
 
 ---
 
@@ -217,7 +217,7 @@ Result: User has BOTH unconditional read AND scoped read
 
 ### What You CAN Scope
 - Grail data (logs, metrics, spans, events) - NOT in default policies
-- Settings write - Admin User has unconditional, but you can assign scoped write instead
+- Settings write - use bounded Scoped Settings Write policy (never use Admin User for this)
 - Entities read - via boundaries
 
 ---
@@ -358,7 +358,7 @@ Policy binding changes can take a few minutes to propagate. API-level validation
 ### Resource Counts at Scale (10 BUs, 2000 Applications)
 | Resource | Count |
 |----------|------:|
-| Policies | 7 (3 default + 3 templated + 1 custom) |
+| Policies | 8 (3 default + 3 templated + 2 custom) |
 | Groups | 4,020 (20 BU + 4,000 Application) |
 | Boundaries | 4,020 (20 BU + 4,000 Application) |
 | Bindings | ~6,040 |
@@ -388,7 +388,7 @@ Policy binding changes can take a few minutes to propagate. API-level validation
 
 3. **Creating custom SLO Reader/Automation User/Document Reader policies** - Already in Standard User
 
-4. **Creating custom SLO Manager/Automation Admin policies for BU Admins** - Already in Admin User
+4. **Creating custom SLO Manager/Automation Admin policies for BU Admins** - Already in Admin Features custom policy
 
 5. **Mixing boundary condition types** in the same binding when conditions don't apply to all permissions
 
@@ -400,6 +400,8 @@ Policy binding changes can take a few minutes to propagate. API-level validation
 
 9. **Assuming default policies include Grail data read** - They don't! You must create custom policies for storage:logs/metrics/spans/events:read
 
+10. **Using Admin User default policy for BU Admins** - It grants unconditional `settings:objects:write` that cannot be scoped via boundaries. Use Standard User + Admin Features custom policy instead
+
 ---
 
 ## Summary
@@ -407,22 +409,25 @@ Policy binding changes can take a few minutes to propagate. API-level validation
 The Dynatrace IAM system in Grail is powerful and flexible, but requires careful design:
 
 1. **Security context** is your foundation - get it right in OpenPipeline
-2. **Check default policies FIRST** - Standard User and Admin User cover most needs
+2. **Check default policies FIRST** - Standard User and Admin User cover most needs (but see #16 for why Admin User should NOT be used directly)
 3. **Grail data read is NEVER in defaults** - you must create custom/templated policies
 4. **IAM is additive** - you can't restrict what broader policies grant
 5. **Settings read is global** - only settings write can be meaningfully scoped
 6. **Boundaries scope data, not features** - use them for storage and settings conditions
 7. **Templates scale** - one policy serves thousands of groups via parameters
 8. **Test incrementally** - validate effective permissions before rollout
+9. **Never use Admin User if you need scoped settings write** - it grants unconditional settings:objects:write that bypasses boundaries
 
 ### Minimal Custom Policy Set
 For most deployments, you only need:
+- **Admin Features (No Settings Write)** (custom) - for BU Admins: automation admin, SLO write, extensions, OpenPipeline, App Engine — replaces Admin User default policy
 - **Scoped Grail Data Read** (templated) - logs, metrics, spans, events, bizevents
 - **Scoped Settings Write** (templated) - for admins who need scoped config access
 - **Scoped Settings Read** (templated) - only useful if NOT using Standard User
-- **SLO Manager** (custom) - only for Application Admins (BU Admins use Admin User)
+- **SLO Manager** (custom) - only for Application Admins (BU Admins get SLO write via Admin Features)
 
-Everything else is covered by Standard User and Admin User default policies.
+Standard User covers everything else (documents, Davis AI, segments, SLO read, automation read).
+Admin User default policy is intentionally NOT used — see Lesson #16.
 
 ---
 
@@ -461,3 +466,74 @@ Renamed "landscape" to "application" across all project files — documentation,
 ### Impact
 - Existing Terraform state from the old `iam/` directory (which used `landscape` naming) is not affected — it lives in `sample-outputs/` as a reference only.
 - New generations via `outputs/` will use `application` naming throughout.
+
+---
+
+## 16. Admin User Default Policy Grants Unconditional Settings Write — Boundaries Cannot Scope It
+
+### Finding
+When the **Admin User** default policy is bound to a group **without a boundary**, it grants `settings:objects:write` unconditionally — meaning users can change settings on **any** entity in the environment, regardless of `dt.security_context`.
+
+Even if a **separate** binding attaches a `scoped_settings_write` policy with a boundary, the unbounded Admin User policy already grants the broader permission. **IAM is additive**: the most permissive grant wins.
+
+### Root Cause
+The Admin User default policy bundles feature-level permissions (automation admin, SLO write, extensions, etc.) together with `settings:objects:write`. You cannot selectively boundary-scope individual permissions within a default policy — it's all or nothing.
+
+### Correct Approach
+To properly scope settings write for BU Admins:
+1. **Remove** the Admin User default policy from BU Admin bindings
+2. **Create a custom `Admin Features (No Settings Write)` policy** that cherry-picks the specific feature-level permissions needed (automation admin, SLO write, extensions management, OpenPipeline, App Engine)
+3. **Keep** only `Scoped Settings Write` (with boundary) for settings write access
+4. This ensures `settings:objects:write` is only granted through the bounded policy
+
+### Resolution
+This has been fixed in the sample configuration:
+- Created `Admin Features (No Settings Write)` custom policy in `policies_custom_policies.tf`
+- BU Admin bindings now use `Standard User` + `Admin Features` instead of `Admin User`
+- The `Admin User` data source has been removed from `policies_default_policies.tf`
+- Settings write for BU Admins now comes exclusively from the bounded `Scoped Settings Write` policy
+
+### Key Takeaway
+Never bind a default policy that contains `settings:objects:write` without a boundary if you intend to scope settings access. Default policies are convenient but opaque — always audit what permissions they contain before using them in a scoped IAM model.
+
+---
+
+## 17. Not All Permission Identifiers Are Valid — Validate Before Creating Policies
+
+### Finding
+Not all permission identifiers that seem logical are actually valid in the Dynatrace IAM API. Attempting to create a policy with an invalid permission identifier will fail at the API level, even if the permission looks like it should exist based on the namespace pattern.
+
+### Invalid Permissions Discovered
+- `hub:catalog-items:install` — **NOT VALID**. The hub namespace only supports `hub:catalog:read`; there is no write or install equivalent.
+- `activegate:activegates:read` — **NOT VALID**. No valid `activegate:*` permissions exist at all in the IAM permission model.
+- `activegate:activegates:write` — **NOT VALID**. Same as above.
+
+### Valid Related Permissions
+- `hub:catalog:read` — IS valid, but there is no `hub:catalog:write` or `hub:catalog-items:install` counterpart.
+
+### How to Validate Permissions
+Use the IAM policy validation endpoint before creating policies:
+
+```
+POST /iam/v1/repo/account/{accountId}/policies/validation
+Body: {"name": "test", "statementQuery": "ALLOW hub:catalog-items:install;"}
+```
+
+If the permission is invalid, the API returns an error with details about the unrecognized identifier.
+
+### Sprint Environment Endpoints
+For sprint/hardening environments, use these endpoints:
+- **SSO Token URL**: `https://sso-sprint.dynatracelabs.com/sso/oauth2/token`
+- **IAM API Base**: `https://api-hardening.internal.dynatracelabs.com`
+
+The Terraform provider source code (`dynatrace/rest/credentials.go`) uses these constants:
+```go
+SprintIAMEndpointURL = "https://api-hardening.internal.dynatracelabs.com"
+SprintTokenURL       = "https://sso-sprint.dynatracelabs.com/sso/oauth2/token"
+```
+
+### Impact on This Configuration
+The `Admin Features (No Settings Write)` custom policy originally included `hub:catalog-items:install` and `activegate:activegates:read/write`. These were removed because they are not valid IAM permission identifiers. The policy now only includes: automation (workflows, calendars, rules), SLO management, extensions management, OpenPipeline configuration, and App Engine management.
+
+### Key Takeaway
+Always validate permission identifiers against the IAM API before adding them to policies. The existence of a feature in the Dynatrace UI does not guarantee a corresponding IAM permission identifier exists. Use the validation endpoint to test before committing to Terraform.

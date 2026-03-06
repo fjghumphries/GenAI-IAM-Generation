@@ -12,8 +12,9 @@
 
 # ------------------------------------------------------------------------------
 # BU Admin Bindings
-# Full access to Grail data + settings/automation admin within their BU
-# Uses Admin User default policy + boundaries for data scoping
+# Full access to Grail data + admin features within their BU
+# Uses Standard User + Admin Features (custom) instead of Admin User
+# to ensure settings:objects:write is ONLY granted via bounded policy
 # ------------------------------------------------------------------------------
 
 resource "dynatrace_iam_policy_bindings_v2" "bu_admins_data" {
@@ -22,9 +23,15 @@ resource "dynatrace_iam_policy_bindings_v2" "bu_admins_data" {
   group   = dynatrace_iam_group.bu_admins[each.key].id
   account = var.account_id
 
-  # Admin User provides: full automation admin, SLO write, settings write, extensions, etc.
+  # Standard User provides: documents, Davis AI, segments, SLO read, automation read
   policy {
-    id = data.dynatrace_iam_policy.admin_user.id
+    id = data.dynatrace_iam_policy.standard_user.id
+  }
+
+  # Admin Features adds: full automation admin, SLO write, extensions write,
+  # OpenPipeline, App Engine, etc. — WITHOUT settings:objects:write
+  policy {
+    id = dynatrace_iam_policy.admin_features.id
   }
 
   # Scoped data read using templated policy with BU prefix parameter
@@ -48,7 +55,7 @@ resource "dynatrace_iam_policy_bindings_v2" "bu_admins_data" {
 }
 
 # Separate binding for scoped settings - uses settings boundary
-# Note: Admin User has unconditional settings:write, boundary scopes it
+# This is now the ONLY source of settings:objects:write for BU Admins
 resource "dynatrace_iam_policy_bindings_v2" "bu_admins_settings" {
   for_each = var.business_units
 

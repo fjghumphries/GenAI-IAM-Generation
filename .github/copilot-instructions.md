@@ -2,6 +2,24 @@
 
 This workspace generates Terraform-managed Dynatrace IAM configurations for Grail (3rd Gen) environments from an `instructions.md` specification file. Follow these rules on every interaction.
 
+Always read the `instructions.md`, `LESSONS_LEARNED.md`, and `sample-outputs/` files before making any changes. They contain critical context about the architecture, design decisions, and gotchas.
+
+IMPORTANT! When deciding how to create policies, make sure you understand what is already included in the default policies. This is published here: https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/default-policies
+
+IMPORTANT! Always check Dynatrace documentation IAM Reference to understand valid permissions and conditions before creating policies: https://docs.dynatrace.com/docs/manage/identity-access-management/permission-management/iam-policy-reference
+
+---
+
+## Critical IAM Gotchas
+
+These MUST be kept in mind on every policy or binding change:
+
+1. **Never use Admin User default policy for scoped groups.** Admin User grants unconditional `settings:objects:write` which CANNOT be restricted by boundaries. IAM is additive — the most permissive grant always wins. Use a custom "Admin Features" policy that cherry-picks admin capabilities WITHOUT settings write, then grant settings write separately via a bounded Scoped Settings Write policy. See `LESSONS_LEARNED.md` #16.
+
+2. **Validate permission identifiers before creating policies.** Not all permission strings that look logical are valid. Use the IAM policy validation API endpoint or the IAM Policy Reference documentation to confirm. See `LESSONS_LEARNED.md` #17.
+
+3. **Boundaries only scope the permissions they apply to.** If a group has two bindings — one unbounded with broad permissions and one bounded with the same permissions — the unbounded binding wins. Boundaries are not group-level restrictions; they are per-binding restrictions.
+
 ---
 
 ## Project Structure

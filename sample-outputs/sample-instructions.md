@@ -34,7 +34,7 @@ Two levels of groups are created. Both levels have two roles. This is fixed — 
 
 | Role | Base policy | Data access | Settings | SLO write |
 |---|---|---|---|---|
-| **Admins** (BU level) | Admin User | Scoped to BU | Write, scoped to BU | Yes (via Admin User) |
+| **Admins** (BU level) | Standard User + Admin Features (custom) | Scoped to BU | Write, scoped to BU | Yes (via Admin Features) |
 | **Users** (BU level) | Standard User | Scoped to BU | Read only (global) | No |
 | **Admins** (Application level) | Standard User + SLO Manager | Scoped to application | Write, scoped to application | Yes (via SLO Manager) |
 | **Users** (Application level) | Standard User | Scoped to application | Read only (global) | No |

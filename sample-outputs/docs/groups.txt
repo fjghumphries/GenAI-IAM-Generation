@@ -15,9 +15,9 @@ GROUP HIERARCHY OVERVIEW
 Account Level
 │
 ├── BU-Level Groups (Access to ALL data within a Business Unit)
-│   ├── BU1-Admins ─────► Full admin access BU1 (Admin User + scoped data)
+│   ├── BU1-Admins ─────► Full admin access BU1 (Std User + Admin Features + scoped data)
 │   ├── BU1-Users ──────► Read access to all BU1 data (Standard User + scoped data)
-│   ├── BU2-Admins ─────► Full admin access BU2
+│   ├── BU2-Admins ─────► Full admin access BU2 (Std User + Admin Features + scoped data)
 │   └── BU2-Users ──────► Read access to all BU2 data
 │
 └── Application-Level Groups (Access only to specific Application)
@@ -38,9 +38,11 @@ across all applications and stages (PROD, DEV, TEST).
 1.1 BU1-Admins
 --------------------------------------------------------------------------------
 Name:           BU1-Admins
-Base Policy:    Admin User (Dynatrace default)
+Base Policy:    Standard User + Admin Features (custom)
 Description:    Administrators for Business Unit 1.
                 Full access to all BU1 observability data and settings.
+                Settings write is scoped via boundary — admins can only
+                modify settings on entities with BU1 security context.
 
 Data Scope:     All data where dt.security_context starts with "BU1-"
                 Captures: BU1-PROD-*, BU1-DEV-*, BU1-TEST-*
@@ -49,13 +51,14 @@ Data Scope:     All data where dt.security_context starts with "BU1-"
 Capabilities:
     ✓ View all BU1 monitoring data (logs, metrics, traces, events, bizevents)
     ✓ View entities scoped to BU1
-    ✓ Read/write settings for BU1 entities (scoped by boundary)
+    ✓ Read/write settings for BU1 entities ONLY (scoped by boundary)
     ✓ Full automation admin (create, edit, run, administer workflows)
     ✓ Create and manage SLOs
     ✓ Extensions read/write
     ✓ OpenPipeline write
     ✓ Documents (full CRUD), Davis AI, Segments
     ✓ App Engine admin
+    ✗ Cannot modify settings for entities outside BU1 scope
 
 Typical Users:  BU1 DevOps leads, Platform engineers, SRE managers
 
@@ -84,6 +87,7 @@ Typical Users:  BU1 Developers, Support engineers, Analysts
 1.3 BU2-Admins / BU2-Users
 --------------------------------------------------------------------------------
 Same structure as BU1 equivalents, scoped to "BU2-" security context prefix.
+BU2-Admins also uses Standard User + Admin Features (not Admin User).
 
 
 ================================================================================
@@ -171,21 +175,22 @@ Typical Users:  PetClinic 02 developers, Testers, Support staff
 SECTION 3: GROUP SUMMARY TABLE
 ================================================================================
 
-+----------------------+-------------+--------------------+----------------+--------+
-| Group                | Base Policy | Data Scope         | Settings Write | SLOs   |
-+----------------------+-------------+--------------------+----------------+--------+
-| BU1-Admins           | Admin User  | Full BU1           | Scoped (BU)    | Write  |
-| BU1-Users            | Std User    | Full BU1           | None (read ok) | Read   |
-| BU2-Admins           | Admin User  | Full BU2           | Scoped (BU)    | Write  |
-| BU2-Users            | Std User    | Full BU2           | None (read ok) | Read   |
-+----------------------+-------------+--------------------+----------------+--------+
-| PETCLINIC01-Admins   | Std User    | BU1-*-PETCLINIC01  | Scoped (PC01)  | Write  |
-| PETCLINIC01-Users    | Std User    | BU1-*-PETCLINIC01  | None (read ok) | Read   |
-| PETCLINIC02-Admins   | Std User    | BU2-*-PETCLINIC02  | Scoped (PC02)  | Write  |
-| PETCLINIC02-Users    | Std User    | BU2-*-PETCLINIC02  | None (read ok) | Read   |
-+----------------------+-------------+--------------------+----------------+--------+
++----------------------+--------------+--------------------+----------------+--------+
+| Group                | Base Policy  | Data Scope         | Settings Write | SLOs   |
++----------------------+--------------+--------------------+----------------+--------+
+| BU1-Admins           | Std+AdminFt  | Full BU1           | Scoped (BU)    | Write  |
+| BU1-Users            | Std User     | Full BU1           | None (read ok) | Read   |
+| BU2-Admins           | Std+AdminFt  | Full BU2           | Scoped (BU)    | Write  |
+| BU2-Users            | Std User     | Full BU2           | None (read ok) | Read   |
++----------------------+--------------+--------------------+----------------+--------+
+| PETCLINIC01-Admins   | Std User     | BU1-*-PETCLINIC01  | Scoped (PC01)  | Write  |
+| PETCLINIC01-Users    | Std User     | BU1-*-PETCLINIC01  | None (read ok) | Read   |
+| PETCLINIC02-Admins   | Std User     | BU2-*-PETCLINIC02  | Scoped (PC02)  | Write  |
+| PETCLINIC02-Users    | Std User     | BU2-*-PETCLINIC02  | None (read ok) | Read   |
++----------------------+--------------+--------------------+----------------+--------+
 
-Note: Settings READ is global for all groups (Standard User grants unconditional
+Note: Std+AdminFt = Standard User + Admin Features (custom policy).
+      Settings READ is global for all groups (Standard User grants unconditional
       settings:objects:read). Only WRITE is scoped via boundaries.
 
 

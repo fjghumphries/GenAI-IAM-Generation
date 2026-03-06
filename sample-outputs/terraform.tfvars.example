@@ -22,14 +22,14 @@ environment_id = "YOUR_ENVIRONMENT_ID"
 # ------------------------------------------------------------------------------
 # business_units = {
 #   "BU1" = {
-#     name        = "BU1"
-#     description = "Your First Business Unit"
-#     applications  = ["APPLICATION_A", "APPLICATION_B"]
+#     name         = "BU1"
+#     description  = "Your First Business Unit"
+#     applications = ["APP_A", "APP_B"]
 #   }
 #   "BU2" = {
-#     name        = "BU2"
-#     description = "Your Second Business Unit"
-#     applications  = ["APPLICATION_C", "APPLICATION_D"]
+#     name         = "BU2"
+#     description  = "Your Second Business Unit"
+#     applications = ["APP_C", "APP_D"]
 #   }
 # }
 
@@ -37,8 +37,8 @@ environment_id = "YOUR_ENVIRONMENT_ID"
 # Optional: Override Applications (defaults are defined in variables.tf)
 # ------------------------------------------------------------------------------
 # applications = {
-#   "APPLICATION_A" = {
-#     name        = "APPLICATION_A"
+#   "APP_A" = {
+#     name        = "APP_A"
 #     description = "Your Application A"
 #     bu          = "BU1"
 #     stages      = ["PROD", "DEV", "TEST"]

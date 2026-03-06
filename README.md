@@ -38,7 +38,7 @@ This project uses an [`instructions.md`](instructions.md) specification file to 
 
 | File | Purpose |
 |------|---------|
-| [`instructions.md`](instructions.md) | The IAM specification. Contains all design rules **and** a clearly marked section where you provide your BUs, applications, and stages. This is the only file you need to edit. |
+| [`instructions.md`](instructions.md) | An **example** IAM specification showing the expected format. Contains design rules and a clearly marked Customer Input section. You are encouraged to write your own `instructions.md` tailored to your organisation's IAM requirements — this file is just a starting point. |
 | [`LESSONS_LEARNED.md`](LESSONS_LEARNED.md) | A living knowledge base of design decisions, Dynatrace IAM gotchas, and findings accumulated during development. Copilot updates it automatically when new insights arise. Review it to understand *why* the configuration is structured the way it is. |
 | `sample-outputs/` | A complete, working example generated from 2 BUs × 2 applications × 2 stages. Use it as a reference to understand what Copilot will produce. The `sample-instructions.md` inside shows the exact input that was used. |
 | `outputs/` | Where Copilot writes your generated Terraform files. This directory mirrors the structure of `sample-outputs/`. |

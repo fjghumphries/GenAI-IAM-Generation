@@ -3,7 +3,7 @@
 # ============================================================================
 # This file defines all variables used across the IAM configuration.
 # Security context format: BU-STAGE-APPLICATION-COMPONENT
-# Example: BU1-PROD-APPLICATION_A-API
+# Example: BU1-PROD-PETCLINIC01-API
 # ============================================================================
 
 # ------------------------------------------------------------------------------
@@ -26,26 +26,26 @@ variable "environment_id" {
 variable "business_units" {
   description = "Map of Business Units with their configuration"
   type = map(object({
-    name        = string
-    description = string
-    applications  = list(string)
+    name         = string
+    description  = string
+    applications = list(string)
   }))
   default = {
     "BU1" = {
-      name        = "BU1"
-      description = "Business Unit 1"
-      applications  = ["PETCLINIC01"]
+      name         = "BU1"
+      description  = "Business Unit 1"
+      applications = ["PETCLINIC01"]
     }
     "BU2" = {
-      name        = "BU2"
-      description = "Business Unit 2"
-      applications  = ["PETCLINIC02"]
+      name         = "BU2"
+      description  = "Business Unit 2"
+      applications = ["PETCLINIC02"]
     }
   }
 }
 
 # ------------------------------------------------------------------------------
-# Applications
+# Applications (previously called deployments/landscapes)
 # Each application belongs to a specific BU
 # ------------------------------------------------------------------------------
 variable "applications" {
@@ -90,5 +90,5 @@ variable "stages" {
 variable "tags" {
   description = "Tags to apply to all IAM resources"
   type        = set(string)
-  default     = ["managed-by-terraform", "shell-iam"]
+  default     = ["managed-by-terraform", "iam-config"]
 }
