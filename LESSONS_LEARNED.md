@@ -544,8 +544,16 @@ Always validate permission identifiers against the IAM API before adding them to
 
 ## 18. All IAM Values Must Be Lowercase (Bucket Names, Tags, Keys, Stages)
 
+<<<<<<< HEAD
 ### Finding
 Grail bucket names must be lowercase. Since `dt.security_context` maps to bucket names, all security context values used in IAM boundaries and binding parameters must also be lowercase. Primary_tags keys, host_group values, variable keys, and stage names should all be lowercase for consistency.
+=======
+### Discovery
+Grail bucket names must be lowercase. Since `dt.security_context` maps to bucket names, and primary_tags, host_group, and other fields should be consistent, ALL IAM-related values must be lowercase throughout the configuration.
+
+### Problem
+Grail bucket names must be lowercase. Since `dt.security_context` maps to bucket names, all security context values used in IAM boundaries and binding parameters must also be lowercase. Additionally, primary_tags keys, host_group values, variable keys, and stage names should all be lowercase for consistency and to avoid case-mismatch issues.
+>>>>>>> 51bb6e0def3667b7b7589876a37177b267557baf
 
 ### Solution
 All variable keys and values are defined in lowercase directly:
@@ -567,6 +575,7 @@ Group names derive from the lowercase keys:
 
 ### Key Takeaway
 Define ALL values lowercase at the source (variable keys, stage names, tag keys, etc.) rather than relying solely on runtime conversion. Keep `lower()` as a defensive measure but do not depend on it as the primary mechanism. This ensures consistency across group names, bucket names, IAM conditions, and documentation.
+<<<<<<< HEAD
 
 ---
 
@@ -657,3 +666,5 @@ If a customer does NOT want BU Admins to have tenant-wide feature access:
 
 ### Key Takeaway
 Boundaries and `dt.security_context` only scope `storage:*` and `settings:*` permissions. Feature-level permissions (`automation`, `slo`, `extensions`, `openpipeline`, `app-engine`) are inherently environment-wide. If a customer requires strict BU-level feature isolation, those permissions should be reserved for a central admin team, not assigned to BU-level groups.
+=======
+>>>>>>> 51bb6e0def3667b7b7589876a37177b267557baf
