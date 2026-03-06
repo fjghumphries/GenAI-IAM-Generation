@@ -1,0 +1,194 @@
+================================================================================
+                         DYNATRACE IAM GROUPS
+================================================================================
+
+This document describes all IAM groups created by this configuration.
+Groups contain users and are assigned policies to define their access.
+
+Total groups (sample config): 8 (4 BU + 4 Landscape)
+Total groups at scale (10 BUs, 2000 Landscapes): 4,020
+
+================================================================================
+GROUP HIERARCHY OVERVIEW
+================================================================================
+
+Account Level
+│
+├── BU-Level Groups (Access to ALL data within a Business Unit)
+│   ├── BU1-Admins ─────► Full admin access BU1 (Admin User + scoped data)
+│   ├── BU1-Users ──────► Read access to all BU1 data (Standard User + scoped data)
+│   ├── BU2-Admins ─────► Full admin access BU2
+│   └── BU2-Users ──────► Read access to all BU2 data
+│
+└── Landscape-Level Groups (Access only to specific Landscape)
+    ├── PETCLINIC01-Admins ──► Read data + write settings for PetClinic 01 (BU1)
+    ├── PETCLINIC01-Users ───► Read-only access to PetClinic 01 (BU1)
+    ├── PETCLINIC02-Admins ──► Read data + write settings for PetClinic 02 (BU2)
+    └── PETCLINIC02-Users ───► Read-only access to PetClinic 02 (BU2)
+
+
+================================================================================
+SECTION 1: BUSINESS UNIT LEVEL GROUPS
+================================================================================
+
+These groups provide access to ALL data within a specific Business Unit,
+across all landscapes and stages (PROD, DEV, TEST).
+
+--------------------------------------------------------------------------------
+1.1 BU1-Admins
+--------------------------------------------------------------------------------
+Name:           BU1-Admins
+Base Policy:    Admin User (Dynatrace default)
+Description:    Administrators for Business Unit 1.
+                Full access to all BU1 observability data and settings.
+
+Data Scope:     All data where dt.security_context starts with "BU1-"
+                Captures: BU1-PROD-*, BU1-DEV-*, BU1-TEST-*
+                Future-proof: new landscapes automatically included
+
+Capabilities:
+    ✓ View all BU1 monitoring data (logs, metrics, traces, events, bizevents)
+    ✓ View entities scoped to BU1
+    ✓ Read/write settings for BU1 entities (scoped by boundary)
+    ✓ Full automation admin (create, edit, run, administer workflows)
+    ✓ Create and manage SLOs
+    ✓ Extensions read/write
+    ✓ OpenPipeline write
+    ✓ Documents (full CRUD), Davis AI, Segments
+    ✓ App Engine admin
+
+Typical Users:  BU1 DevOps leads, Platform engineers, SRE managers
+
+--------------------------------------------------------------------------------
+1.2 BU1-Users
+--------------------------------------------------------------------------------
+Name:           BU1-Users
+Base Policy:    Standard User (Dynatrace default)
+Description:    Users for Business Unit 1. Read access to all BU1 data.
+
+Data Scope:     All data where dt.security_context starts with "BU1-"
+
+Capabilities:
+    ✓ View all BU1 monitoring data (logs, metrics, traces, events, bizevents)
+    ✓ View entities scoped to BU1
+    ✓ Read settings (global - all settings, unscoped)
+    ✓ SLO read, Automation read/limited write, Davis AI
+    ✓ Documents (full CRUD), Segments read/write
+    ✗ Cannot write settings
+    ✗ Cannot create automation (beyond SIMPLE type)
+    ✗ Cannot manage SLOs
+
+Typical Users:  BU1 Developers, Support engineers, Analysts
+
+--------------------------------------------------------------------------------
+1.3 BU2-Admins / BU2-Users
+--------------------------------------------------------------------------------
+Same structure as BU1 equivalents, scoped to "BU2-" security context prefix.
+
+
+================================================================================
+SECTION 2: LANDSCAPE LEVEL GROUPS
+================================================================================
+
+These groups provide access ONLY to a specific landscape within a BU.
+More restrictive than BU-level groups.
+
+--------------------------------------------------------------------------------
+2.1 PETCLINIC01-Admins
+--------------------------------------------------------------------------------
+Name:           PETCLINIC01-Admins
+Base Policy:    Standard User + SLO Manager (custom)
+Description:    Administrators for PetClinic 01 (BU1). Settings write scoped
+                to this landscape.
+
+Data Scope:     PetClinic 01 data across active stages:
+                - BU1-PROD-PETCLINIC01-*
+                - BU1-DEV-PETCLINIC01-*
+
+Capabilities:
+    ✓ View PETCLINIC01 monitoring data across all stages
+    ✓ View entities scoped to PETCLINIC01
+    ✓ Read/write settings for PETCLINIC01 entities (scoped by boundary)
+    ✓ Create and manage SLOs
+    ✓ Automation read + limited write (SIMPLE type via Standard User)
+    ✓ Documents (full CRUD), Davis AI, Segments
+    ✗ Cannot access other landscapes
+    ✗ Cannot create full automation workflows (BU Admin only)
+
+Typical Users:  PetClinic 01 team leads, Application owners
+
+--------------------------------------------------------------------------------
+2.2 PETCLINIC01-Users
+--------------------------------------------------------------------------------
+Name:           PETCLINIC01-Users
+Base Policy:    Standard User
+Description:    Users for PetClinic 01 (BU1). Read-only data access.
+
+Data Scope:     Same as PETCLINIC01-Admins
+
+Capabilities:
+    ✓ View PETCLINIC01 monitoring data across all stages
+    ✓ View entities scoped to PETCLINIC01
+    ✓ Read settings (global - all settings, unscoped)
+    ✓ SLO read, Automation read, Davis AI, Documents, Segments
+    ✗ Cannot write settings
+    ✗ Cannot manage SLOs or automation
+    ✗ Cannot access other landscapes
+
+Typical Users:  PetClinic 01 developers, Testers, Support staff
+
+--------------------------------------------------------------------------------
+2.3 PETCLINIC02-Admins
+--------------------------------------------------------------------------------
+Name:           PETCLINIC02-Admins
+Base Policy:    Standard User + SLO Manager (custom)
+Description:    Administrators for PetClinic 02 (BU2). Settings write scoped
+                to this landscape.
+
+Data Scope:     PetClinic 02 data across active stages:
+                - BU2-PROD-PETCLINIC02-*
+                - BU2-DEV-PETCLINIC02-*
+
+Capabilities:   Same as PETCLINIC01-Admins, scoped to BU2-*-PETCLINIC02-*
+
+Typical Users:  PetClinic 02 team leads, Application owners
+
+--------------------------------------------------------------------------------
+2.4 PETCLINIC02-Users
+--------------------------------------------------------------------------------
+Name:           PETCLINIC02-Users
+Base Policy:    Standard User
+Description:    Users for PetClinic 02 (BU2). Read-only data access.
+
+Data Scope:     Same as PETCLINIC02-Admins
+
+Capabilities:   Same as PETCLINIC01-Users, scoped to BU2-*-PETCLINIC02-*
+
+Typical Users:  PetClinic 02 developers, Testers, Support staff
+
+
+================================================================================
+SECTION 3: GROUP SUMMARY TABLE
+================================================================================
+
++----------------------+-------------+--------------------+----------------+--------+
+| Group                | Base Policy | Data Scope         | Settings Write | SLOs   |
++----------------------+-------------+--------------------+----------------+--------+
+| BU1-Admins           | Admin User  | Full BU1           | Scoped (BU)    | Write  |
+| BU1-Users            | Std User    | Full BU1           | None (read ok) | Read   |
+| BU2-Admins           | Admin User  | Full BU2           | Scoped (BU)    | Write  |
+| BU2-Users            | Std User    | Full BU2           | None (read ok) | Read   |
++----------------------+-------------+--------------------+----------------+--------+
+| PETCLINIC01-Admins   | Std User    | BU1-*-PETCLINIC01  | Scoped (PC01)  | Write  |
+| PETCLINIC01-Users    | Std User    | BU1-*-PETCLINIC01  | None (read ok) | Read   |
+| PETCLINIC02-Admins   | Std User    | BU2-*-PETCLINIC02  | Scoped (PC02)  | Write  |
+| PETCLINIC02-Users    | Std User    | BU2-*-PETCLINIC02  | None (read ok) | Read   |
++----------------------+-------------+--------------------+----------------+--------+
+
+Note: Settings READ is global for all groups (Standard User grants unconditional
+      settings:objects:read). Only WRITE is scoped via boundaries.
+
+
+================================================================================
+END OF GROUPS DOCUMENT
+================================================================================

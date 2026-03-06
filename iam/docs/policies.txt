@@ -1,0 +1,194 @@
+================================================================================
+                        DYNATRACE IAM POLICIES
+================================================================================
+
+This document describes all IAM policies used in this configuration.
+Policies define WHAT actions users can perform.
+
+NOTE: IAM is additive. Permissions compound across policies. You cannot
+restrict what a broader policy already grants.
+
+Total policies: 7 (4 default + 3 templated + 1 custom)
+
+================================================================================
+SECTION 1: DYNATRACE DEFAULT POLICIES (Out-of-the-Box)
+================================================================================
+
+These policies are maintained by Dynatrace and stay up-to-date with platform
+changes. Referenced via data sources - not created by us. Always check these
+before creating custom policies.
+
+KEY INSIGHT: Default policies do NOT include Grail data read
+(storage:logs/metrics/spans/events:read). You must use templated policies
+for scoped data access.
+
+--------------------------------------------------------------------------------
+1.1 Standard User
+--------------------------------------------------------------------------------
+Purpose:    Base policy for all non-admin users
+Used by:    BU Users, Landscape Admins, Landscape Users
+
+Key grants:
+  Documents:   Full CRUD (read, write, delete, share)
+  Segments:    Read, write, delete filter segments
+  Automation:  Read + run + write SIMPLE workflows, read calendars/rules
+  Davis AI:    Full analyzers + CoPilot
+  SLOs:        Read only
+  Settings:    Read only (UNCONDITIONAL - applies to ALL settings)
+  Hub:         Catalog read
+  Notifications: Read + write
+  Vulnerability: Read
+  Extensions:  Read
+
+NOT included: storage:logs/metrics/spans/events/bizevents:read
+
+--------------------------------------------------------------------------------
+1.2 Admin User
+--------------------------------------------------------------------------------
+Purpose:    Full administrative access for BU-level admins
+Used by:    BU Admins
+
+Includes everything in Standard User PLUS:
+  Automation:  Full admin (write all types, admin, full calendars/rules)
+  Settings:    Full write + admin (UNCONDITIONAL)
+  SLOs:        Write (create/manage)
+  Extensions:  Full write
+  OpenPipeline: Write
+  App Engine:  Install + delete apps
+  Deployment:  ActiveGate/OneAgent configuration
+  OAuth2:      Client management
+
+NOT included: storage:logs/metrics/spans/events/bizevents:read
+
+--------------------------------------------------------------------------------
+1.3 Read Entities
+--------------------------------------------------------------------------------
+Purpose:    Access to entity data (hosts, services, applications, etc.)
+Grants:     ALLOW storage:entities:read
+Used by:    All groups (with boundary to scope)
+Note:       Supports dt.security_context and entity.type conditions
+
+--------------------------------------------------------------------------------
+1.4 Read System Events
+--------------------------------------------------------------------------------
+Purpose:    Access to Dynatrace system and audit events
+Grants:     ALLOW storage:system:read
+Used by:    BU Admins, Landscape Admins
+Note:       NOT scoped by security_context - applies globally
+
+
+================================================================================
+SECTION 2: CUSTOM TEMPLATED POLICIES (Parameterized)
+================================================================================
+
+These policies use ${bindParam:...} syntax for reusability.
+The parameter value is provided when binding the policy to a group.
+
+--------------------------------------------------------------------------------
+2.1 Scoped Grail Data Read
+--------------------------------------------------------------------------------
+Name:       Scoped Grail Data Read
+Parameter:  security_context_prefix (e.g., "BU1-" or "BU1-PROD-LANDSCAPE_A")
+
+Policy Statement:
+    ALLOW storage:logs:read 
+      WHERE storage:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    
+    ALLOW storage:metrics:read 
+      WHERE storage:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    
+    ALLOW storage:spans:read 
+      WHERE storage:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    
+    ALLOW storage:events:read 
+      WHERE storage:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    
+    ALLOW storage:bizevents:read 
+      WHERE storage:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    
+    ALLOW storage:entities:read 
+      WHERE storage:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    
+    ALLOW storage:smartscape:read 
+      WHERE storage:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    
+    ALLOW storage:user.sessions:read 
+      WHERE storage:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    
+    ALLOW storage:user.events:read 
+      WHERE storage:dt.security_context startsWith "${bindParam:security_context_prefix}";
+
+Used by:    All groups with different parameter values
+Example:    BU1-Admins uses parameter "BU1-" to access all BU1 data
+
+--------------------------------------------------------------------------------
+2.2 Scoped Settings Read
+--------------------------------------------------------------------------------
+Name:       Scoped Settings Read
+Parameter:  security_context_prefix
+
+Policy Statement:
+    ALLOW settings:objects:read 
+      WHERE settings:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    ALLOW settings:schemas:read;
+
+Used by:    User groups (read-only settings access)
+
+--------------------------------------------------------------------------------
+2.3 Scoped Settings Write
+--------------------------------------------------------------------------------
+Name:       Scoped Settings Write
+Parameter:  security_context_prefix
+
+Policy Statement:
+    ALLOW settings:objects:read, settings:objects:write
+      WHERE settings:dt.security_context startsWith "${bindParam:security_context_prefix}";
+    ALLOW settings:schemas:read;
+
+Used by:    Admin groups (can modify settings within their scope)
+
+
+================================================================================
+SECTION 3: CUSTOM POLICIES
+================================================================================
+
+Only one custom policy remains. All other common capabilities
+(documents, Davis AI, automation read, SLO read, segments) are
+already covered by Standard User and Admin User default policies.
+
+--------------------------------------------------------------------------------
+3.1 SLO Manager
+--------------------------------------------------------------------------------
+Purpose:    Adds SLO write capability on top of Standard User
+Why needed: Standard User has SLO read only. Admin User has SLO write,
+            but Landscape Admins use Standard User, not Admin User.
+
+Policy Statement:
+    ALLOW slo:slos:read, slo:slos:write;
+    ALLOW slo:objective-templates:read;
+
+Used by:    Landscape Admins only
+            (BU Admins get this via Admin User default policy)
+
+
+================================================================================
+POLICY SUMMARY TABLE
+================================================================================
+
++------------------------------+------------+----------------------------------+
+| Policy                       | Type       | Used By                          |
++------------------------------+------------+----------------------------------+
+| Admin User                   | Default    | BU Admins                        |
+| Standard User                | Default    | BU Users, LA Admins, LA Users    |
+| Read Entities                | Default    | All groups (with boundary)       |
+| Read System Events           | Default    | BU Admins, LA Admins             |
+| Scoped Grail Data Read       | Templated  | All groups (with boundary+param) |
+| Scoped Settings Read         | Templated  | BU Users, LA Users (with bdry)   |
+| Scoped Settings Write        | Templated  | BU Admins, LA Admins (with bdry) |
+| SLO Manager                  | Custom     | Landscape Admins only            |
++------------------------------+------------+----------------------------------+
+
+
+================================================================================
+END OF POLICIES DOCUMENT
+================================================================================

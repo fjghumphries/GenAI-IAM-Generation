@@ -1,0 +1,52 @@
+# ============================================================================
+# Example Terraform Variables File
+# ============================================================================
+# Copy this file to terraform.tfvars and fill in your actual values.
+# NEVER commit terraform.tfvars to version control if it contains secrets.
+# ============================================================================
+
+# ------------------------------------------------------------------------------
+# Required Configuration
+# ------------------------------------------------------------------------------
+
+# Your Dynatrace Account UUID (found in Account Management)
+# Example: "12345678-1234-1234-1234-123456789abc"
+account_id = "YOUR_ACCOUNT_UUID"
+
+# Your Dynatrace Environment ID (the ID portion of your environment URL)
+# Example: "abc12345" from https://abc12345.live.dynatrace.com
+environment_id = "YOUR_ENVIRONMENT_ID"
+
+# ------------------------------------------------------------------------------
+# Optional: Override Business Units (defaults are defined in variables.tf)
+# ------------------------------------------------------------------------------
+# business_units = {
+#   "BU1" = {
+#     name        = "BU1"
+#     description = "Your First Business Unit"
+#     landscapes  = ["LANDSCAPE_A", "LANDSCAPE_B"]
+#   }
+#   "BU2" = {
+#     name        = "BU2"
+#     description = "Your Second Business Unit"
+#     landscapes  = ["LANDSCAPE_C", "LANDSCAPE_D"]
+#   }
+# }
+
+# ------------------------------------------------------------------------------
+# Optional: Override Landscapes (defaults are defined in variables.tf)
+# ------------------------------------------------------------------------------
+# landscapes = {
+#   "LANDSCAPE_A" = {
+#     name        = "LANDSCAPE_A"
+#     description = "Your Landscape A"
+#     bu          = "BU1"
+#     stages      = ["PROD", "DEV", "TEST"]
+#   }
+#   # ... additional landscapes
+# }
+
+# ------------------------------------------------------------------------------
+# Optional: Override Tags
+# ------------------------------------------------------------------------------
+# tags = ["managed-by-terraform", "your-custom-tag"]
