@@ -106,7 +106,9 @@ A **custom** policy that replaces the Admin User default policy. Cherry-picks ad
 - `extensions:definitions:write, configurations:write`
 - `app-engine:apps:install, run, delete`
 
-Settings write is granted separately via the bounded **Scoped Settings Write** templated policy.
+Settings write is granted separately via the **Scoped Settings Write** templated policy (`policies_templated_policies.tf`), which uses a `settings:dt.security_context startsWith "{bu}-"` boundary. This means settings changes (entity configuration, alerting, etc.) are restricted to entities whose security context matches the BU prefix. This is the **only** source of `settings:objects:write` in the configuration — Admin Features deliberately omits it.
+
+> **Scoping note:** Feature-level permissions (`automation:*`, `slo:*`, `extensions:*`, `app-engine:*`) are **inherently tenant-wide** — they cannot be scoped by `dt.security_context`, and boundaries have no effect on them. BU Admins can manage automations, SLOs, and extensions across the entire environment. Only `storage:*` and `settings:*` permissions support security context scoping. See `LESSONS_LEARNED.md` #20.
 
 > **Why not Admin User?** Admin User grants unconditional `settings:objects:write` which **cannot** be scoped via boundaries. IAM is additive — the most permissive grant always wins.
 
@@ -143,19 +145,22 @@ A custom policy granting `slo:slos:write`. BU Admins already get this via Admin 
 
 Security context is set **directly on the host** via `oneagentctl` — not derived from tags via OpenPipeline. This guarantees `dt.security_context` is present from first ingest.
 
-```bash
-sudo ./oneagentctl \
-  --set-host-group=petclinic02 \
-  --set-host-property="primary_tags.bu=bu2" \
+```
+azureuser@tomcat-frontend01:/opt/dynatrace/oneagent/agent/tools$ sudo ./oneagentctl \
+  --restart-service \
+  --set-host-group=bu1-petclinic01 \
+  --set-host-property="primary_tags.bu=bu1" \
   --set-host-property="primary_tags.stage=prod" \
-  --set-host-property="primary_tags.application=petclinic02" \
-  --set-host-property="dt.security_context=bu2-prod-petclinic02" \
-  --restart-service
+  --set-host-property="primary_tags.application=petclinic01" \
+  --set-host-property="dt.security_context=bu1-prod-petclinic01" \
+  --set-host-property="dt.cost.costcenter=bu1" \
+  --set-host-property="dt.cost.product=petclinic01"
 ```
 
 Key points:
 - `--restart-service` is **required** — without it, changes are not applied
-- `host-group` controls OneAgent configuration grouping (separate from IAM)
+- `host-group` follows `{bu}-{application}` format for OneAgent configuration grouping (separate from IAM)
 - `primary_tags.*` are for filtering/DQL only — not usable in IAM policies
 - `dt.security_context` must match the format in §1.3 exactly
+- `dt.cost.costcenter` and `dt.cost.product` are optional Grail cost allocation fields (see §1.5)
 - `startsWith()` is used for hierarchical scoping (e.g. all of `bu1-`, or `bu1-prod-`)
